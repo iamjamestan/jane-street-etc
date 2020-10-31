@@ -2,7 +2,7 @@
 
 <h1 align="center">Jane Street - NUS Virtual Electronic Trading Challenge (ETC)</h1>
 
-Jane Street ETC is a day-long programming contest where participants compete against each other in a simulated market. Participating teams wrote algorithms to trade various financial instruments such as bonds, stocks, ETFs, and ADRs, with the intention of maximizing profit.
+Jane Street ETC is a day-long programming contest where participants compete against each other in a simulated market. Held virtually due to the COVID-19 situation, participating teams wrote algorithms to trade various financial instruments such as bonds, stocks, ETFs, and ADRs, with the intention of maximizing profit.
 
 The challenge comprised of two competitions which were both structured into five minute rounds, with two teams pitted against each other every round. During the first competition, teams traded and built up their algorithms for seven hours. In the last hour, a simultaneous competition, "The Final Hour", was held, allowing teams to compete in a second competition with the best version of their bots.
 
