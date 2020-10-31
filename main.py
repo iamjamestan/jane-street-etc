@@ -1,11 +1,14 @@
 import json
 import time
 
+from helper import *
 from socket import *
 from socket import error as socket_error
 from typing import Any, BinaryIO, Dict
 from enum import Enum
 from bond import bond_strategy
+from adr import adr_strategy
+from xlf import xlf_strategy
 
 ###########################
 ## CONSTANT DECLARATIONS ##
@@ -78,6 +81,18 @@ symbol_trade = {
   "XLF": []
 }
 
+## Book Prices
+symbol_book = {
+  "BOND": {},
+  "GS": {},
+  "MS": {},
+  "USD": {},
+  "VALBZ": {},
+  "VALE": {},
+  "WFC": {},
+  "XLF": {}
+}
+
 ## Open/Close Status of Symbols
 symbol_open = {
   "BOND": False,
@@ -120,6 +135,8 @@ symbol_book_handlers = {
 
 orders: Dict[int, Any] = {}
 
+conversions: Dict[int, Any] = {}
+
 ####################
 ## MISC FUNCTIONS ##
 ####################
@@ -130,9 +147,6 @@ def initialize() -> None:
   print("Port: {}".format(PORT))
   print("Hostname: {}".format(EXCHANGE_HOSTNAME))
   print()
-
-def mean(l) -> int:
-  return sum(l) // len(l)
 
 ########################
 ## EXCHANGE FUNCTIONS ##
@@ -154,6 +168,7 @@ def recreate_exchange() -> BinaryIO:
       exchange = create_exchange()
       write_to_exchange(exchange, HELLO)
       response = read_from_exchange(exchange)
+      print(response)
       if response["type"] == str(InfoType.HELLO):
         SERVER_STATUS = 1
         print("POSITIONS: {}".format(response["symbols"]))
@@ -162,13 +177,16 @@ def recreate_exchange() -> BinaryIO:
           symbol_positions[symbol["symbol"]] = symbol["position"]
         print("Reconnected!")
         return exchange
+      elif response["type"] == str(InfoType.ERROR) and response["error"] == "TEAM_ALREADY_CONNECTED":
+        SERVER_STATUS = 1
+        print("Already connected!")
+        return exchange
       else:
+        time.sleep(0.1)
         SERVER_STATUS = 0
-        continue
     except socket_error:
       print("Failed to reconnect, trying again...")
       time.sleep(0.1)
-      continue
 
 def write_to_exchange(exchange: BinaryIO, obj: Any) -> None:
   json.dump(obj, exchange)
@@ -184,6 +202,7 @@ def read_from_exchange(exchange: BinaryIO) -> Any:
 def server_info(exchange: BinaryIO) -> None:
   global SERVER_STATUS
   global ORDER_ID
+  global symbol_trade
 
   iterations = 0
 
@@ -213,16 +232,52 @@ def server_info(exchange: BinaryIO) -> None:
           has_open = True
       if not has_open:
         SERVER_STATUS = 0
+        symbol_trade = {
+          "BOND": [],
+          "GS": [],
+          "MS": [],
+          "USD": [],
+          "VALBZ": [],
+          "VALE": [],
+          "WFC": [],
+          "XLF": []
+        }
         return
     elif info_type == str(InfoType.ERROR):
       print("ERROR: {}".format(info["error"]))
     elif info_type == str(InfoType.TRADE):
       symbol_trade[info["symbol"]].append((info["price"], info["size"]))
+
     elif info_type == str(InfoType.ACK):
       _order_id = info["order_id"]
-      order = orders[_order_id]
-      print("Order {}: Dir - {}, Symbol - {}, Price - {}, Orig - {} has been placed on the books"
-              .format(_order_id, order[0], order[1], order[2], order[3], order[4]))
+      if _order_id in orders:
+        order = orders[_order_id]
+        print("Order {}: Dir - {}, Symbol - {}, Price - {}, Orig - {} has been placed on the books"
+                .format(_order_id, order[0], order[1], order[2], order[3], order[4]))
+      else:
+        conversion = conversions[_order_id]
+        print("Order {}: Dir - {}, Symbol - {}, Size - {} has been converted"
+                .format(_order_id, conversion[0], conversion[1], conversion[2]))
+        if conversion[1] == str(Symbol.VALE):
+          symbol_positions[str(Symbol.VALE)] -= conversion[2]
+          symbol_positions[str(Symbol.VALBZ)] += conversion[2]
+          symbol_positions[str(Symbol.USD)] -= 10
+        elif conversion[1] == str(Symbol.XLF):
+          symbol_positions[str(Symbol.USD)] -= 100
+          if conversion[0] == str(Direction.BUY):
+            symbol_positions[str(Symbol.BOND)] -= 3
+            symbol_positions[str(Symbol.GS)] -= 2
+            symbol_positions[str(Symbol.MS)] -= 3
+            symbol_positions[str(Symbol.WFC)] -= 2
+            symbol_positions[str(Symbol.XLF)] += 10
+          elif conversion[0] == str(Direction.SELL):
+            symbol_positions[str(Symbol.BOND)] += 3
+            symbol_positions[str(Symbol.GS)] += 2
+            symbol_positions[str(Symbol.MS)] += 3
+            symbol_positions[str(Symbol.WFC)] += 2
+            symbol_positions[str(Symbol.XLF)] -= 10
+
+        print("CURRENT POSITION: {}".format(symbol_positions))
 
     elif info_type == str(InfoType.FILL):
       _order_id = info["order_id"]
@@ -253,22 +308,51 @@ def server_info(exchange: BinaryIO) -> None:
       symbol = info["symbol"]
       buy = info["buy"]
       sell = info["sell"]
+      symbol_book[symbol] = { "buy": buy, "sell": sell }
       if symbol in symbol_book_handlers:
         fn = symbol_book_handlers[symbol]
-        response = fn(buy, sell)
-        if response:
-          price = response["price"]
-          size = response["size"]
-          direction = response["dir"]
-          write_to_exchange(exchange, { "type": str(Action.ADD), "order_id": ORDER_ID, "symbol": symbol, \
-                                        "dir": direction, "price": price, "size": size })
-          orders[ORDER_ID] = (direction, symbol, price, size, size)
-          ORDER_ID += 1
-          if direction == str(Direction.BUY):
-            symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (price * size)
+        if symbol == str(Symbol.BOND):
+          response = fn(buy, sell)
+          if response:
+            price = response["price"]
+            size = response["size"]
+            direction = response["dir"]
+            write_to_exchange(exchange, { "type": str(Action.ADD), "order_id": ORDER_ID, "symbol": symbol, \
+                                          "dir": direction, "price": price, "size": size })
+            orders[ORDER_ID] = (direction, symbol, price, size, size)
+            ORDER_ID += 1
+            if direction == str(Direction.BUY):
+              symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (price * size)
+        elif symbol == str(Symbol.XLF): 
+          responses = fn(symbol_book[str(Symbol.BOND)], symbol_book[str(Symbol.GS)], \
+                        symbol_book[str(Symbol.MS)], symbol_book[str(Symbol.WFC)], \
+                        symbol_book[str(Symbol.XLF)])
+          for response in responses:
+            response["order_id"] = ORDER_ID
+            write_to_exchange(exchange, response)
+            if response["type"] != str(Action.CONVERT):
+              orders[ORDER_ID] = (response["dir"], response["symbol"], response["price"], response["size"], response["size"])
+            else:
+              conversions[ORDER_ID] = (response["dir"], response["symbol"], response["size"])
+            ORDER_ID += 1
+            if response["dir"] == str(Direction.BUY):
+              symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (response["price"] * response["size"])
 
-def do_action():
-  pass
+def do_action(exchange: BinaryIO):
+  global ORDER_ID
+  adr_actions = adr_strategy(symbol_trade[str(Symbol.VALE)], symbol_trade[str(Symbol.VALBZ)])
+  if adr_actions:
+    for action in adr_actions:
+      action["order_id"] = ORDER_ID
+      write_to_exchange(exchange, action)
+      if action["type"] != str(Action.CONVERT):
+        orders[ORDER_ID] = (action["dir"], action["symbol"], action["price"], action["size"], action["size"])
+      else:
+        conversions[ORDER_ID] = (action["dir"], action["symbol"], action["size"])
+      ORDER_ID += 1
+      if action["dir"] == str(Direction.BUY):
+        symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (action["price"] * action["size"])
+
 
 def main() -> None:
   global SERVER_STATUS
@@ -278,7 +362,7 @@ def main() -> None:
   while True:
     server_info(exchange)
     if SERVER_STATUS == 1:
-      do_action()
+      do_action(exchange)
     elif SERVER_STATUS == 0:
       exchange = recreate_exchange()
 

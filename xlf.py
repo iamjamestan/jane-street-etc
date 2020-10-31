@@ -4,8 +4,6 @@ if basket items sell < xlf buy -> buy basket items, convert, sell xlf
 if basket items buy > xlf sell -> buy xlf, convert, sell basket items
 'buy': [[999, 4], [998, 8]], 'sell': [[1001, 5], [1002, 7]]
 """
-
-
 def xlf_strategy(bond, gs, ms, wfc, xlf):
     if not (bond and gs and ms and wfc and xlf):
         return None
