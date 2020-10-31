@@ -96,12 +96,14 @@ def recreate_exchange() -> BinaryIO:
       if response["type"] == str(InfoType.HELLO):
         SERVER_STATUS = 1
         print("Reconnected!")
+        return exchange
       else:
         SERVER_STATUS = 0
         continue
     except socket_error:
       print("Failed to reconnect, trying again...")
       time.sleep(0.1)
+      continue
 
 def write_to_exchange(exchange: BinaryIO, obj: Any) -> None:
   json.dump(obj, exchange)
