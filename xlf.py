@@ -7,6 +7,17 @@ if basket items buy > xlf sell -> buy xlf, convert, sell basket items
 def xlf_strategy(bond, gs, ms, wfc, xlf):
     if not (bond and gs and ms and wfc and xlf):
         return None
+    for direction in ["BUY", "SELL"]:
+        if not bond[direction]:
+            return
+        if not gs[direction]:
+            return
+        if not ms[direction]:
+            return
+        if not wfc[direction]:
+            return
+        if not xlf[direction]:
+            return
 
     def _calc_xlf_value(bond, gs, ms, wfc, direction):  # direction = buy or sell
         return 3 * bond[direction][0][0] + 2 * gs[direction][0][0] + 3 * ms[direction][0][0] + 2 * wfc[direction][0][0]
@@ -23,7 +34,7 @@ def xlf_strategy(bond, gs, ms, wfc, xlf):
                     "price": wfc[reverse_direction][0][0], "size": 2},
                 ]
 
-    if _calc_xlf_value(bond, gs, ms, wfc, 'sell') < (xlf['BUY'][0][0] * 10 + 100):
+    if _calc_xlf_value(bond, gs, ms, wfc, 'SELL') < (xlf['BUY'][0][0] * 10 + 100):
         return _execute_basket_items(bond, gs, ms, wfc, 'BUY') + [
             {"type": "convert", "symbol": "XLF", "dir": "BUY", "size": 10},
             {"type": "add", "symbol": "XLF", "dir": 'SELL',
