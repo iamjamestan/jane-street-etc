@@ -1,5 +1,6 @@
 import json
 import time
+import pandas as pd
 
 from helper import *
 from socket import *
@@ -131,7 +132,7 @@ symbol_limits = {
 ## Book handler for each symbol
 symbol_book_handlers = {
   "BOND": bond_strategy,
-  "XLF": xlf_strategy
+  # "XLF": xlf_strategy
 }
 
 orders: Dict[int, Any] = {}
@@ -154,18 +155,22 @@ def initialize() -> None:
 ########################
 
 def create_exchange() -> BinaryIO:
+  global SERVER_STATUS
   sock = socket(AF_INET, SOCK_STREAM)
   print("Connecting to the server now...")
   sock.connect((EXCHANGE_HOSTNAME, PORT))
   print("Connected.")
+  SERVER_STATUS = 1
   print()
   return sock.makefile("rw", 1)
 
 def recreate_exchange() -> BinaryIO:
   global SERVER_STATUS
   print("Reconnecting to server now...")
-  while SERVER_STATUS == 0:
+  attempts = 0
+  while SERVER_STATUS == 0 and attempts < 20:
     try:
+      attempts += 1
       exchange = create_exchange()
       SERVER_STATUS = 1
       write_to_exchange(exchange, HELLO)
@@ -210,7 +215,7 @@ def server_info(exchange: BinaryIO) -> None:
 
   iterations = 0
 
-  while iterations < 1000:
+  while iterations < 250:
     info = read_from_exchange(exchange)
     iterations += 1
     if not info:
@@ -380,6 +385,8 @@ def main() -> None:
       do_action(exchange)
     elif SERVER_STATUS == 0:
       exchange = recreate_exchange()
+      if SERVER_STATUS == 0:
+        break
 
 if __name__ == '__main__':
   initialize()
