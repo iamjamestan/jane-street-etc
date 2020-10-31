@@ -59,59 +59,6 @@ class InfoType(PrintEnum):
   FILL = "fill"
   OUT = "out"
 
-####################
-## MISC FUNCTIONS ##
-####################
-
-def initialize() -> None:
-  print("Initialising...")
-  print("Environment: {}".format(ENV))
-  print("Port: {}".format(PORT))
-  print("Hostname: {}".format(EXCHANGE_HOSTNAME))
-  print()
-
-def mean(l) -> int:
-  return sum(l) // len(l)
-
-########################
-## EXCHANGE FUNCTIONS ##
-########################
-
-def create_exchange() -> BinaryIO:
-  sock = socket(AF_INET, SOCK_STREAM)
-  print("Connecting to the server now...")
-  sock.connect((EXCHANGE_HOSTNAME, PORT))
-  print("Connected.")
-  print()
-  return sock.makefile("rw", 1)
-
-def recreate_exchange() -> BinaryIO:
-  global SERVER_STATUS
-  print("Reconnecting to server now...")
-  while SERVER_STATUS == 0:
-    try:
-      exchange = create_exchange()
-      write_to_exchange(exchange, HELLO)
-      response = read_from_exchange(exchange)
-      if response["type"] == str(InfoType.HELLO):
-        SERVER_STATUS = 1
-        print("Reconnected!")
-        return exchange
-      else:
-        SERVER_STATUS = 0
-        continue
-    except socket_error:
-      print("Failed to reconnect, trying again...")
-      time.sleep(0.1)
-      continue
-
-def write_to_exchange(exchange: BinaryIO, obj: Any) -> None:
-  json.dump(obj, exchange)
-  exchange.write("\n")
-
-def read_from_exchange(exchange: BinaryIO) -> Any:
-  return json.loads(exchange.readline())
-
 #################################
 ## MAIN DATA / DATA STRUCTURES ##
 #################################
@@ -174,6 +121,63 @@ symbol_book_handlers = {
 orders: Dict[int, Any] = {}
 
 ####################
+## MISC FUNCTIONS ##
+####################
+
+def initialize() -> None:
+  print("Initialising...")
+  print("Environment: {}".format(ENV))
+  print("Port: {}".format(PORT))
+  print("Hostname: {}".format(EXCHANGE_HOSTNAME))
+  print()
+
+def mean(l) -> int:
+  return sum(l) // len(l)
+
+########################
+## EXCHANGE FUNCTIONS ##
+########################
+
+def create_exchange() -> BinaryIO:
+  sock = socket(AF_INET, SOCK_STREAM)
+  print("Connecting to the server now...")
+  sock.connect((EXCHANGE_HOSTNAME, PORT))
+  print("Connected.")
+  print()
+  return sock.makefile("rw", 1)
+
+def recreate_exchange() -> BinaryIO:
+  global SERVER_STATUS
+  print("Reconnecting to server now...")
+  while SERVER_STATUS == 0:
+    try:
+      exchange = create_exchange()
+      write_to_exchange(exchange, HELLO)
+      response = read_from_exchange(exchange)
+      if response["type"] == str(InfoType.HELLO):
+        SERVER_STATUS = 1
+        print("POSITIONS: {}".format(response["symbols"]))
+        symbols = response["symbols"]
+        for symbol in symbols:
+          symbol_positions[symbol["symbol"]] = symbol["position"]
+        print("Reconnected!")
+        return exchange
+      else:
+        SERVER_STATUS = 0
+        continue
+    except socket_error:
+      print("Failed to reconnect, trying again...")
+      time.sleep(0.1)
+      continue
+
+def write_to_exchange(exchange: BinaryIO, obj: Any) -> None:
+  json.dump(obj, exchange)
+  exchange.write("\n")
+
+def read_from_exchange(exchange: BinaryIO) -> Any:
+  return json.loads(exchange.readline())
+
+####################
 ## MAIN FUNCTIONS ##
 ####################
 
@@ -181,8 +185,11 @@ def server_info(exchange: BinaryIO) -> None:
   global SERVER_STATUS
   global ORDER_ID
 
-  while True:
+  iterations = 0
+
+  while iterations < 1000:
     info = read_from_exchange(exchange)
+    iterations += 1
     if not info:
       break
     info_type = info["type"]
@@ -260,6 +267,9 @@ def server_info(exchange: BinaryIO) -> None:
           if direction == str(Direction.BUY):
             symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (price * size)
 
+def do_action():
+  pass
+
 def main() -> None:
   global SERVER_STATUS
   exchange: BinaryIO = create_exchange()
@@ -268,7 +278,9 @@ def main() -> None:
   while True:
     write_to_exchange(exchange, HELLO)
     server_info(exchange)
-    if SERVER_STATUS == 0:
+    if SERVER_STATUS == 1:
+      do_action()
+    elif SERVER_STATUS == 0:
       exchange = recreate_exchange()
 
 if __name__ == '__main__':
@@ -276,7 +288,6 @@ if __name__ == '__main__':
   while True:
     try:
       main()
-      break
     except socket_error:
       print("\nERROR: Retrying the connection...\n")
       time.sleep(0.1)
