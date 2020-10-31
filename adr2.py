@@ -6,7 +6,7 @@ DATA_TO_CONSIDER = 26
 
 def ema(values, period):
     values = np.array(values)
-    return pd.DataFrame(values).ewm(span=period).mean().values[-1][-1]
+    return pd.DataFrame(values).ewm(span=period, adjust=False).mean().values[-1][-1]
 
 def adr_strategy(vale_trade_info, valbz_trade_info) -> dict:
     vale_trade_price_list = list(map(lambda x: x[0], vale_trade_info))
@@ -65,7 +65,12 @@ def adr_signal_bollinger(cs_trade_price_list, adr_trade_price_list):
     mean = np.mean(prices[-20:])
     std = np.std(prices[-20:])
 
-    
+    bollinger_hi2 = mean + std*2
+    bollinger_hi1 = mean + std
+    bollinger = mean
+    bollinger_hi1 = mean - std
+    bollinger_lo2 = mean - std*2
+
 
     macd = macd12 - macd26
     diff = macd - signal
