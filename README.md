@@ -22,3 +22,7 @@ Below are some of the strategies that we have employed in our algorithm:
 ### BOND Strategy
 
 We used a very simple strategy for bonds, with a slight speed optimization. Put simply, we sell when the price is above 1000 and buy when price is below 1000. And we do that for all bonds that meet this criteria at any point in time, allowing us to reap quick and steady benefits.
+
+### XLF Strategy
+
+We computed the value of basket of stocks under the ETF which would be more liquid than the ETF itself and closer to the fair market value. If the difference between the basket value and the ETF exceeds the conversion cost plus a small buffer, we will convert from the ETF constituents to the ETF, and vice versa.
