@@ -1,5 +1,6 @@
 from helper import *
 import pandas as pd
+import numpy as np
 
 DATA_TO_CONSIDER = 26
 
