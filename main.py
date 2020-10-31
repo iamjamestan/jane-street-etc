@@ -4,6 +4,7 @@ import time
 from socket import *
 from socket import error as socket_error
 from typing import Any, BinaryIO
+from enum import Enum
 
 ###########################
 ## CONSTANT DECLARATIONS ##
@@ -13,12 +14,33 @@ TEAM_NAME = "COLLEGE AVE EAST"
 TEST_ENV = "test"
 PROD_ENV = "production"
 ENV = TEST_ENV
-
 TEST_EXCHANGE_INDEX = 0
 PORT = 25000 + (TEST_EXCHANGE_INDEX if ENV == TEST_ENV else 0)
 EXCHANGE_HOSTNAME = "test-exch-" + TEAM_NAME if ENV == TEST_ENV else PROD_ENV
 
 HELLO = { "type": "hello", "team": TEAM_NAME.upper() }
+
+## Enums for exchange sending
+class PrintEnum(Enum):
+  def __str__(self):
+    return self.value
+
+class Action(PrintEnum):
+  ADD = "add"
+  CONVERT = "convert"
+
+class Symbol(PrintEnum):
+  BOND = "BOND"
+  GS = "GS"
+  MS = "MS"
+  VALBZ = "VALBZ"
+  VALE = "VALE"
+  WFC = "WFC"
+  XLF = "XLF"
+
+class Direction(PrintEnum):
+  BUY = "BUY"
+  SELL = "SELL"
 
 ####################
 ## MISC FUNCTIONS ##
