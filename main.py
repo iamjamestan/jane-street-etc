@@ -3,12 +3,13 @@ import time
 import pandas as pd
 
 from helper import *
+from pprint import pprint
 from socket import *
 from socket import error as socket_error
 from typing import Any, BinaryIO, Dict
 from enum import Enum
 from bond import bond_strategy
-from adr2 import adr_strategy
+from adr import adr_strategy
 from xlf import xlf_strategy, xlf_ema_strategy
 
 ###########################
@@ -72,8 +73,8 @@ ORDER_ID = 0
 
 ## Book handler for each symbol
 symbol_book_handlers = {
-  # "BOND": bond_strategy,
-  # "XLF": xlf_strategy
+  "BOND": bond_strategy,
+  "XLF": xlf_strategy
 }
 
 ## Trade Prices
@@ -269,7 +270,7 @@ def server_info(exchange: BinaryIO) -> None:
       print("ERROR: {}".format(info["error"]))
     elif info_type == str(InfoType.TRADE):
       symbol_trade[info["symbol"]].append((info["price"], info["size"]))
-
+      # pprint(symbol_trade)
     elif info_type == str(InfoType.ACK):
       _order_id = info["order_id"]
       if _order_id in orders:
@@ -334,17 +335,18 @@ def server_info(exchange: BinaryIO) -> None:
       if symbol in symbol_book_handlers:
         fn = symbol_book_handlers[symbol]
         if symbol == str(Symbol.BOND):
-          response = fn(buy, sell)
-          if response:
-            price = response["price"]
-            size = response["size"]
-            direction = response["dir"]
-            write_to_exchange(exchange, { "type": str(Action.ADD), "order_id": ORDER_ID, "symbol": symbol, \
-                                          "dir": direction, "price": price, "size": size })
-            orders[ORDER_ID] = (direction, symbol, price, size, size)
-            ORDER_ID += 1
-            if direction == str(Direction.BUY):
-              symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (price * size)
+          responses = fn(buy, sell)
+          if responses:
+            for response in responses:
+              price = response["price"]
+              size = response["size"]
+              direction = response["dir"]
+              write_to_exchange(exchange, { "type": str(Action.ADD), "order_id": ORDER_ID, "symbol": symbol, \
+                                            "dir": direction, "price": price, "size": size })
+              orders[ORDER_ID] = (direction, symbol, price, size, size)
+              ORDER_ID += 1
+              if direction == str(Direction.BUY):
+                symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (price * size)
         elif symbol == str(Symbol.XLF): 
           responses = fn(symbol_book[str(Symbol.BOND)], symbol_book[str(Symbol.GS)], \
                         symbol_book[str(Symbol.MS)], symbol_book[str(Symbol.WFC)], \
@@ -363,38 +365,38 @@ def server_info(exchange: BinaryIO) -> None:
 
 def do_action(exchange: BinaryIO):
   global ORDER_ID
-  # adr_actions = adr_strategy(symbol_trade[str(Symbol.VALE)], symbol_trade[str(Symbol.VALBZ)])
-  # if adr_actions:
-  #   for action in adr_actions:
-  #     action["order_id"] = ORDER_ID
-  #     write_to_exchange(exchange, action)
-  #     if action["type"] != str(Action.CONVERT):
-  #       orders[ORDER_ID] = (action["dir"], action["symbol"], action["price"], action["size"], action["size"])
-  #     else:
-  #       conversions[ORDER_ID] = (action["dir"], action["symbol"], action["size"])
-  #     ORDER_ID += 1
-  #     if action["dir"] == str(Direction.BUY):
-  #       symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (action["price"] * action["size"])
-  bond_df = pd.DataFrame(symbol_trade[str(Symbol.BOND)], columns=["price", "qty"])
-  gs_df = pd.DataFrame(symbol_trade[str(Symbol.GS)], columns=["price", "qty"])
-  ms_df = pd.DataFrame(symbol_trade[str(Symbol.MS)], columns=["price", "qty"])
-  wfc_df = pd.DataFrame(symbol_trade[str(Symbol.WFC)], columns=["price", "qty"])
-  xlf_df = pd.DataFrame(symbol_trade[str(Symbol.XLF)], columns=["price", "qty"])
-  xlf_actions = xlf_ema_strategy(symbol_book[str(Symbol.BOND)], symbol_book[str(Symbol.GS)], \
-                          symbol_book[str(Symbol.MS)], symbol_book[str(Symbol.WFC)], \
-                          symbol_book[str(Symbol.XLF)], bond_df, gs_df, ms_df, \
-                          wfc_df, xlf_df)
-  if xlf_actions:
-    for action in xlf_actions:
+  adr_actions = adr_strategy(symbol_trade[str(Symbol.VALE)], symbol_trade[str(Symbol.VALBZ)])
+  if adr_actions:
+    for action in adr_actions:
       action["order_id"] = ORDER_ID
       write_to_exchange(exchange, action)
       if action["type"] != str(Action.CONVERT):
         orders[ORDER_ID] = (action["dir"], action["symbol"], action["price"], action["size"], action["size"])
-        if action["dir"] == str(Direction.BUY):
-          symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (action["price"] * action["size"])
       else:
         conversions[ORDER_ID] = (action["dir"], action["symbol"], action["size"])
       ORDER_ID += 1
+      if action["dir"] == str(Direction.BUY):
+        symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (action["price"] * action["size"])
+  # bond_df = pd.DataFrame(symbol_trade[str(Symbol.BOND)], columns=["price", "qty"])
+  # gs_df = pd.DataFrame(symbol_trade[str(Symbol.GS)], columns=["price", "qty"])
+  # ms_df = pd.DataFrame(symbol_trade[str(Symbol.MS)], columns=["price", "qty"])
+  # wfc_df = pd.DataFrame(symbol_trade[str(Symbol.WFC)], columns=["price", "qty"])
+  # xlf_df = pd.DataFrame(symbol_trade[str(Symbol.XLF)], columns=["price", "qty"])
+  # xlf_actions = xlf_ema_strategy(symbol_book[str(Symbol.BOND)], symbol_book[str(Symbol.GS)], \
+  #                         symbol_book[str(Symbol.MS)], symbol_book[str(Symbol.WFC)], \
+  #                         symbol_book[str(Symbol.XLF)], bond_df, gs_df, ms_df, \
+  #                         wfc_df, xlf_df)
+  # if xlf_actions:
+  #   for action in xlf_actions:
+  #     action["order_id"] = ORDER_ID
+  #     write_to_exchange(exchange, action)
+  #     if action["type"] != str(Action.CONVERT):
+  #       orders[ORDER_ID] = (action["dir"], action["symbol"], action["price"], action["size"], action["size"])
+  #       if action["dir"] == str(Direction.BUY):
+  #         symbol_positions[str(Symbol.USD)] = symbol_positions[str(Symbol.USD)] - (action["price"] * action["size"])
+  #     else:
+  #       conversions[ORDER_ID] = (action["dir"], action["symbol"], action["size"])
+  #     ORDER_ID += 1
 
 
 def main() -> None:
