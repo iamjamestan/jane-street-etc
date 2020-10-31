@@ -30,6 +30,7 @@ def get_actual_price(cs_price, adr_price):
 prev_diff = None
 #common stock & its ADR pair trading strategy
 def adr_signal(cs_trade_price_list, adr_trade_price_list):
+    global prev_diff
     prices = []
     for i in range(len(cs_trade_price_list)):
         prices.append(get_actual_price(cs_trade_price_list[0], adr_trade_price_list[0]))
