@@ -19,7 +19,7 @@ from xlf import xlf_strategy, xlf_ema_strategy
 TEAM_NAME = "COLLEGEAVEEAST"
 TEST_ENV = "test"
 PROD_ENV = "production"
-ENV = TEST_ENV
+ENV = PROD_ENV
 TEST_EXCHANGE_INDEX = 0
 PORT = 25000 + (TEST_EXCHANGE_INDEX if ENV == TEST_ENV else 0)
 ZEROETH_HOSTNAME = "0-prod-like"
