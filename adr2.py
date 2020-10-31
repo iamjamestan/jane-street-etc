@@ -42,11 +42,11 @@ def adr_signal(cs_trade_price_list, adr_trade_price_list):
     signal = ema(prices[-9:], 9)
 
     macd = macd12 - macd26
-    diff = macd26 - signal
+    diff = macd - signal
 
     cs_mean = mean(cs_trade_price_list[-1:])
     adr_mean = mean(adr_trade_price_list[-1:])
-
+    print(prev_diff, diff, macd, signal)
     if prev_diff != None:
         if prev_diff <= 0 and diff > 0:
             return ["BUY", adr_mean, cs_mean, 0]
