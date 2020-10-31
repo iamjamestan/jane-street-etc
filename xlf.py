@@ -70,16 +70,27 @@ def xlf_ema_strategy(bond, gs, ms, wfc, xlf, bond_df, gs_df, ms_df, wfc_df, xlf_
     span = 5
     if not (bond and gs and ms and wfc and xlf and len(bond_df) >= span and len(gs_df) >= span and len(ms_df) >= span and len(wfc_df) >= span and len(xlf_df) >= span):
         return None
+    for direction in ["BUY", "SELL"]:
+        if not bond[direction]:
+            return
+        if not gs[direction]:
+            return
+        if not ms[direction]:
+            return
+        if not wfc[direction]:
+            return
+        if not xlf[direction]:
+            return
     for col in ['price', 'qty']:
-        if not bond[col]:
+        if bond_df[col].empty:
             return
-        if not gs[col]:
+        if gs_df[col].empty:
             return
-        if not ms[col]:
+        if ms_df[col].empty:
             return
-        if not wfc[col]:
+        if wfc_df[col].empty:
             return
-        if not xlf[col]:
+        if xlf_df[col].empty:
             return
 
     def _calc_xlf_value(bond_df, gs_df, ms_df, wfc_df):  # col = buy or sell
