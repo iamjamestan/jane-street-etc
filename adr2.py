@@ -34,16 +34,39 @@ macds = []
 #common stock & its ADR pair trading strategy
 def adr_signal(cs_trade_price_list, adr_trade_price_list):
     global prev_diff, macds
-    prices = []
-    for i in range(len(cs_trade_price_list)):
-        prices.append(get_actual_price(cs_trade_price_list[i], adr_trade_price_list[i]))
+    prices = np.mean([cs_trade_price_list, adr_trace_price_list], axis=0).tolist()
 
     macd26 = ema(prices[-26:], 26)
     macd12 = ema(prices[-12:], 12)
     macds.append(macd)
     macds = macds[-9:]
     signal = ema(macds, 9)
+
+    macd = macd12 - macd26
+    diff = macd - signal
+
+    cs_mean = mean(cs_trade_price_list[-1:])
+    adr_mean = mean(adr_trade_price_list[-1:])
+    print(prev_diff, diff, macd, signal)
+    if prev_diff != None:
+        if prev_diff <= 0 and diff > 0:
+            return ["BUY", adr_mean, cs_mean, 0]
+        elif prev_diff >= 0 and diff < 0:
+            return ["SELL", adr_mean, cs_mean, 0]
+    prev_diff = diff
+
+    return None
+
+
+def adr_signal_bollinger(cs_trade_price_list, adr_trade_price_list):
+    global prev_diff, macds
+    prices = np.mean([cs_trade_price_list, adr_trace_price_list], axis=0).tolist()
+
+    mean = np.mean(prices[-20:])
+    std = np.std(prices[-20:])
+
     
+
     macd = macd12 - macd26
     diff = macd - signal
 
