@@ -20,5 +20,5 @@ def adr_signal(cs_trade_price_list, adr_trade_price_list):
     cs_mean = mean(cs_trade_price_list)
     adr_mean = mean(adr_trade_price_list)
     fair_diff = cs_mean - adr_mean
-    if (fair_diff >= 1):
+    if (fair_diff >= 2):
         return [True, adr_mean, cs_mean, fair_diff]
