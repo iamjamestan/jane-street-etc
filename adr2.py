@@ -40,8 +40,8 @@ def adr_signal(cs_trade_price_list, adr_trade_price_list):
     macd = macd12 - macd26
     diff = macd26 - signal
 
-    cs_mean = mean(cs_trade_price_list[-9:])
-    adr_mean = mean(adr_trade_price_list[-9:])
+    cs_mean = mean(cs_trade_price_list[-1:])
+    adr_mean = mean(adr_trade_price_list[-1:])
 
     if prev_diff != None:
         if prev_diff <= 0 and diff > 0:
