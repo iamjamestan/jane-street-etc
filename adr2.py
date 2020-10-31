@@ -18,10 +18,12 @@ def adr_strategy(vale_trade_info, valbz_trade_info) -> dict:
         if(result != None and result[0] != None):
             print ("\n------------------------- ADR Trading -------------------------\n")
             if result[0] == "BUY":
+                print("BUY", result[1])
                 return [{"type" : "add", "symbol": "VALE", "dir" : "BUY", "price": result[1], "size": 10},
                         {"type" : "convert", "symbol": "VALE", "dir" : "SELL", "size": 10}]
             #stuff = result[3] // 2
             elif result[0] == "SELL":
+                print("SELL", result[2])
                 return [{"type" : "add", "symbol": "VALBZ", "dir" : "SELL", "price": result[2], "size": 10}]
 
 def get_actual_price(cs_price, adr_price):
@@ -47,12 +49,9 @@ def adr_signal(cs_trade_price_list, adr_trade_price_list):
 
     if prev_diff != None:
         if prev_diff <= 0 and diff > 0:
-            return ["BUY", adr_mean, cs_mean, fair_diff]
+            return ["BUY", adr_mean, cs_mean, 0]
         elif prev_diff >= 0 and diff < 0:
-            return ["SELL", adr_mean, cs_mean, fair_diff]
+            return ["SELL", adr_mean, cs_mean, 0]
     prev_diff = diff
 
     return None
-    fair_diff = cs_mean - adr_mean
-    if (fair_diff >= 2):
-        return [True, adr_mean, cs_mean, fair_diff]
