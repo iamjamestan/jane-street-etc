@@ -103,6 +103,7 @@ if __name__ == '__main__':
   while True:
     try:
       main()
+      break
     except socket_error:
       print("\nERROR: Retrying the connection...\n")
       time.sleep(0.1)
