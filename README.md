@@ -23,6 +23,10 @@ Below are some of the strategies that we have employed in our algorithm:
 
 We used a very simple strategy for bonds, with a slight speed optimization. Put simply, we sell when the price is above 1000 and buy when price is below 1000. And we do that for all bonds that meet this criteria at any point in time, allowing us to reap quick and steady benefits.
 
+### ADR Strategy
+
+For our ADR strategy, we compared the value of the common stock VALBZ to its illiquid ADR counterpart, VALE, by taking the average of their 10 most recent trade prices. If the value of VALE was lower than that of VALBZ by at least 2 dollars, we will place orders to buy VALE, convert VALE to VALBZ, and then sell VALBZ.
+
 ### XLF Strategy
 
 We computed the value of basket of stocks under the ETF which would be more liquid than the ETF itself and closer to the fair market value. If the difference between the basket value and the ETF exceeds the conversion cost plus a small buffer, we will convert from the ETF constituents to the ETF, and vice versa.
