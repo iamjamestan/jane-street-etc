@@ -10,13 +10,16 @@ from enum import Enum
 ## CONSTANT DECLARATIONS ##
 ###########################
 
-TEAM_NAME = "COLLEGE AVE EAST"
+TEAM_NAME = "COLLEGEAVEEAST"
 TEST_ENV = "test"
 PROD_ENV = "production"
 ENV = TEST_ENV
 TEST_EXCHANGE_INDEX = 0
 PORT = 25000 + (TEST_EXCHANGE_INDEX if ENV == TEST_ENV else 0)
-EXCHANGE_HOSTNAME = "test-exch-" + TEAM_NAME if ENV == TEST_ENV else PROD_ENV
+ZEROETH_HOSTNAME = "0-prod-like"
+FIRST_HOSTNAME = "1-slower"
+SECOND_HOSTNAME = "2-empty"
+EXCHANGE_HOSTNAME = "test-exch-" + TEAM_NAME.lower() if ENV == TEST_ENV else PROD_ENV
 
 HELLO = { "type": "hello", "team": TEAM_NAME.upper() }
 
