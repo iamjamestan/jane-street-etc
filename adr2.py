@@ -12,7 +12,7 @@ def adr_strategy(vale_trade_info, valbz_trade_info) -> dict:
             size_to_trade = (result[3] - 2) * 2 + 4
             #stuff = result[3] // 2
             return [{"type" : "add", "symbol": "VALE", "dir" : "BUY", "price": result[1]+1, "size": size_to_trade},
-                    {"type" : "convert", "symbol": "VALE", "dir" : "SELL", "size": 10},
+                    {"type" : "convert", "symbol": "VALE", "dir" : "SELL", "size": size_to_trade},
                     {"type" : "add", "symbol": "VALBZ", "dir" : "SELL", "price": result[2]-1, "size": size_to_trade}]
 
 #common stock & its ADR pair trading strategy
