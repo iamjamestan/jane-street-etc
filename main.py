@@ -84,9 +84,16 @@ def read_from_exchange(exchange: BinaryIO) -> Any:
 
 SERVER_STATUS = 1
 
+
 ####################
 ## MAIN FUNCTIONS ##
 ####################
+
+def server_info(exchange: BinaryIO) -> None:
+  while True:
+    info = read_from_exchange(exchange)
+    print(info)
+    time.sleep(0.01)
 
 def main() -> None:
   exchange: BinaryIO = create_exchange()
@@ -96,6 +103,7 @@ def main() -> None:
   response = read_from_exchange(exchange)
   print("Reply from exchange: {}".format(response))
   while True:
+    server_info(exchange)
     break
 
 if __name__ == '__main__':
