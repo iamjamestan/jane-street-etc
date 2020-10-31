@@ -274,9 +274,8 @@ def main() -> None:
   global SERVER_STATUS
   exchange: BinaryIO = create_exchange()
   print("Exchange successfully initialised")
-
+  write_to_exchange(exchange, HELLO)
   while True:
-    write_to_exchange(exchange, HELLO)
     server_info(exchange)
     if SERVER_STATUS == 1:
       do_action()
