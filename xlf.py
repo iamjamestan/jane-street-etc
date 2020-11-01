@@ -1,57 +1,60 @@
 import pandas as pd
 
-"""
-Use the more liquid basket items to evaluate XLF pricing
-if basket items sell < xlf buy -> buy basket items, convert, sell xlf
-if basket items buy > xlf sell -> buy xlf, convert, sell basket items
-'buy': [[999, 4], [998, 8]], 'sell': [[1001, 5], [1002, 7]]
-"""
+from typing import List
+from etc_types import *
 
+def xlf_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: RestingDict) -> List[Trade]:
+    """Uses the more liquid basket items to evaluate XLF pricing, and returns a list of trades to make.
 
-def xlf_strategy(bond, gs, ms, wfc, xlf):
-    if not (bond and gs and ms and wfc and xlf):
-        return None
-    for direction in ["BUY", "SELL"]:
-        if not bond[direction]:
-            return
-        if not gs[direction]:
-            return
-        if not ms[direction]:
-            return
-        if not wfc[direction]:
-            return
-        if not xlf[direction]:
-            return
+    If basket items sell < XLF buy, then we will buy the basket items, convert, and sell XLF. If the
+        basket items buy > XLF sell, then we will buy XLF, convert, and sell the basket items.
 
-    def _calc_xlf_value(bond, gs, ms, wfc, direction):  # direction = buy or sell
+    For all arguments, the format will be a dictionary with keys `"BUY"` and `"SELL"`, and the values
+        will be lists of resting orders.
+
+    Args:
+        gs (RestingDict): Dictionary of GS resting orders.
+        ms (RestingDict): Dictionary of MS resting orders.
+        wfc (RestingDict): Dictionary of WFC resting orders.
+        xlf (RestingDict): Dictionary of XLF resting orders.
+
+    Returns:
+        List[Trade]: List of trades to make. May be empty.
+
+    """
+    if not (gs and ms and wfc and xlf):
+        return []
+    for direction in [Direction.BUY, Direction.SELL]:
+        if not (gs[direction] and ms[direction] and wfc[direction] and xlf[direction]):
+            return []
+
+    def _calc_xlf_value(gs: RestingDict, ms: RestingDict, wfc: RestingDict, direction: str) -> int:  # direction = buy or sell
         return 3 * 1000 + 2 * gs[direction][0][0] + 3 * ms[direction][0][0] + 2 * wfc[direction][0][0]
 
-    def _execute_basket_items(bond, gs, ms, wfc, direction):
-        reverse_direction = 'BUY' if direction == 'SELL' else 'SELL'
-        buffer = 1 if direction == 'BUY' else -1
-
+    def _execute_basket_items(gs: RestingDict, ms: RestingDict, wfc: RestingDict, direction: str) -> List[Trade]:
+        reverse_direction = Direction.BUY if direction == Direction.SELL else Direction.SELL
         return [
-            {"type": "add", "symbol": "GS", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.GS, "dir": direction,
              "price": gs[reverse_direction][0][0], "size": 2},
-            {"type": "add", "symbol": "MS", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.MS, "dir": direction,
              "price": ms[reverse_direction][0][0], "size": 3},
-            {"type": "add", "symbol": "WFC", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.WFC, "dir": direction,
              "price": wfc[reverse_direction][0][0], "size": 2},
         ]
 
-    if _calc_xlf_value(bond, gs, ms, wfc, 'SELL') + 102 < (xlf['BUY'][0][0] * 10):
-        return _execute_basket_items(bond, gs, ms, wfc, 'BUY') + [
-            {"type": "convert", "symbol": "XLF", "dir": "BUY", "size": 10},
-            {"type": "add", "symbol": "XLF", "dir": 'SELL',
-             "price": xlf['BUY'][0][0], "size": 10},
+    if _calc_xlf_value(gs, ms, wfc, Direction.SELL) + 102 < (xlf[Direction.BUY][0][0] * 10):
+        return _execute_basket_items(gs, ms, wfc, Direction.BUY) + [
+            {"type": Action.CONVERT, "symbol": Symbol.XLF, "dir": Direction.BUY, "size": 10},
+            {"type": Action.ADD, "symbol": Symbol.XLF, "dir": Direction.SELL,
+             "price": xlf[Direction.BUY][0][0], "size": 10},
         ]
-    elif _calc_xlf_value(bond, gs, ms, wfc, 'BUY') > (xlf['SELL'][0][0] * 10 + 102):
+    elif _calc_xlf_value(gs, ms, wfc, Direction.BUY) > (xlf[Direction.SELL][0][0] * 10 + 102):
         return [
-            {"type": "add", "symbol": "XLF", "dir": 'BUY',
-             "price": xlf['SELL'][0][0], "size": 10},
-            {"type": "convert", "symbol": "XLF", "dir": "SELL", "size": 10},
-        ] + _execute_basket_items(bond, gs, ms, wfc, 'SELL')
-
+            {"type": Action.ADD, "symbol": Symbol.XLF, "dir": Direction.BUY,
+             "price": xlf[Direction.SELL][0][0], "size": 10},
+            {"type": Action.CONVERT, "symbol": Symbol.XLF, "dir": Direction.SELL, "size": 10},
+        ] + _execute_basket_items(gs, ms, wfc, Direction.SELL)
+    return []
 
 """
 Same as xlf_strategy but uses time series of trade value in etf basket to calculate xlf value
@@ -66,62 +69,68 @@ t4    | t4
 """
 
 
-def xlf_ema_strategy(bond, gs, ms, wfc, xlf, bond_df, gs_df, ms_df, wfc_df, xlf_df):
-    span = 5
-    if not (bond and gs and ms and wfc and xlf and len(bond_df) >= span and len(gs_df) >= span and len(ms_df) >= span and len(wfc_df) >= span and len(xlf_df) >= span):
-        return None
-    for direction in ["BUY", "SELL"]:
-        if not bond[direction]:
-            return
-        if not gs[direction]:
-            return
-        if not ms[direction]:
-            return
-        if not wfc[direction]:
-            return
-        if not xlf[direction]:
-            return
-    for col in ['price', 'qty']:
-        if bond_df[col].empty:
-            return
-        if gs_df[col].empty:
-            return
-        if ms_df[col].empty:
-            return
-        if wfc_df[col].empty:
-            return
-        if xlf_df[col].empty:
-            return
+def xlf_ema_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: RestingDict, 
+    gs_df: pd.DataFrame, ms_df: pd.DataFrame, wfc_df: pd.DataFrame, xlf_df: pd.DataFrame) -> List[Trade]:
+    """Same as `xlf_strategy` but uses time series of trade values in ETF basket to calculate the XLF value.
+        This strategy is not used in the final algorithm as it conflicts with the other XLF strategy and was
+        too conservative for the profits we were looking to make.
 
-    def _calc_xlf_value(bond_df, gs_df, ms_df, wfc_df):  # col = buy or sell
-        gs_ema = gs_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
-        ms_ema = ms_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
-        wfc_ema = wfc_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
+    The `pd.DataFrame` inputs all have the following columns: `"price"` and `"qty"`.
+
+    Args:
+        gs (RestingDict): Dictionary of GS resting orders.
+        ms (RestingDict): Dictionary of MS resting orders.
+        wfc (RestingDict): Dictionary of WFC resting orders.
+        xlf (RestingDict): Dictionary of XLF resting orders.
+        gs_df (pd.DataFrame): DataFrame of GS trades.
+        ms_df (pd.DataFrame): DataFrame of MS trades.
+        wfc_df (pd.DataFrame): DataFrame of WFC trades.
+        xlf_df (pd.DataFrame): DataFrame of XLF trades.
+
+    Returns:
+        List[Trade]: List of trades to make. This list may be empty.
+
+    """
+    span: int = 5
+    if not (gs and ms and wfc and xlf and len(gs_df) >= span and \
+        len(ms_df) >= span and len(wfc_df) >= span and len(xlf_df) >= span):
+        return []
+    for direction in [Direction.BUY, Direction.SELL]:
+        if not (gs[direction] and ms[direction] and wfc[direction] and xlf[direction]):
+            return []
+    for col in ['price', 'qty']:
+        if gs_df[col].empty or ms_df[col].empty or wfc_df[col].empty or xlf_df[col].empty:
+            return []
+
+    def _calc_xlf_value(gs_df: pd.DataFrame, ms_df: pd.DataFrame, wfc_df: pd.DataFrame) -> float:
+        gs_ema: float = gs_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
+        ms_ema: float = ms_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
+        wfc_ema: float = wfc_df.ewm(span=span, adjust=False).mean().iloc[-1, 0]
 
         return 3 * 1000 + 2 * gs_ema + 3 * ms_ema + 2 * wfc_ema
 
-    def _execute_basket_items(bond, gs, ms, wfc, direction):
-        reverse_direction = 'BUY' if direction == 'SELL' else 'SELL'
-        buffer = 1 if direction == 'BUY' else -1
+    def _execute_basket_items(gs: RestingDict, ms: RestingDict, wfc: RestingDict, direction: str):
+        reverse_direction: str = Direction.BUY if direction == Direction.SELL else Direction.SELL
+        buffer: int = 1 if direction == Direction.BUY else -1
 
         return [
-            {"type": "add", "symbol": "GS", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.GS, "dir": direction,
              "price": gs[reverse_direction][0][0] + buffer, "size": 2},
-            {"type": "add", "symbol": "MS", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.MS, "dir": direction,
              "price": ms[reverse_direction][0][0] + buffer, "size": 3},
-            {"type": "add", "symbol": "WFC", "dir": direction,
+            {"type": Action.ADD, "symbol": Symbol.WFC, "dir": direction,
              "price": wfc[reverse_direction][0][0] + buffer, "size": 2},
         ]
 
-    if _calc_xlf_value(bond_df, gs_df, ms_df, wfc_df) + 102 < (xlf['BUY'][0][0] * 10):
-        return _execute_basket_items(bond, gs, ms, wfc, 'BUY') + [
-            {"type": "convert", "symbol": "XLF", "dir": "BUY", "size": 10},
-            {"type": "add", "symbol": "XLF", "dir": 'SELL',
-             "price": xlf['BUY'][0][0], "size": 10},
+    if _calc_xlf_value(gs_df, ms_df, wfc_df) + 102 < (xlf[Direction.BUY][0][0] * 10):
+        return _execute_basket_items(gs, ms, wfc, Direction.BUY) + [
+            {"type": Action.CONVERT, "symbol": Symbol.XLF, "dir": Direction.BUY, "size": 10},
+            {"type": Action.ADD, "symbol": Symbol.XLF, "dir": Direction.SELL,
+             "price": xlf[Direction.BUY][0][0], "size": 10},
         ]
-    elif _calc_xlf_value(bond_df, gs_df, ms_df, wfc_df) > (xlf['SELL'][0][0] * 10 + 102):
+    elif _calc_xlf_value(gs_df, ms_df, wfc_df) > (xlf[Direction.SELL][0][0] * 10 + 102):
         return [
-            {"type": "add", "symbol": "XLF", "dir": 'BUY',
-             "price": xlf['SELL'][0][0], "size": 10},
-            {"type": "convert", "symbol": "XLF", "dir": "SELL", "size": 10},
-        ] + _execute_basket_items(bond, gs, ms, wfc, 'SELL')
+            {"type": Action.ADD, "symbol": Symbol.XLF, "dir": Direction.BUY,
+             "price": xlf[Direction.SELL][0][0], "size": 10},
+            {"type": Action.CONVERT, "symbol": Symbol.XLF, "dir": Direction.SELL, "size": 10},
+        ] + _execute_basket_items(gs, ms, wfc, Direction.SELL)
