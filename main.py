@@ -1,16 +1,14 @@
 import json
 import time
-import pandas as pd
 
 from helper import *
-from pprint import pprint
 from socket import *
 from socket import error as socket_error
 from typing import Any, BinaryIO, Dict
-from enum import Enum
+from etc_types import *
 from bond import bond_strategy
 from adr import adr_strategy
-from xlf import xlf_strategy, xlf_ema_strategy
+from xlf import xlf_strategy #, xlf_ema_strategy - Unused strategy
 
 ###########################
 ## CONSTANT DECLARATIONS ##
@@ -28,41 +26,6 @@ SECOND_HOSTNAME = "2-empty"
 EXCHANGE_HOSTNAME = "test-exch-" + TEAM_NAME.lower() if ENV == TEST_ENV else PROD_ENV
 
 HELLO = { "type": "hello", "team": TEAM_NAME.upper() }
-
-## Enums for exchange sending
-class PrintEnum(Enum):
-  def __str__(self):
-    return self.value
-
-class Action(PrintEnum):
-  ADD = "add"
-  CONVERT = "convert"
-
-class Symbol(PrintEnum):
-  BOND = "BOND"
-  GS = "GS"
-  MS = "MS"
-  USD = "USD"
-  VALBZ = "VALBZ"
-  VALE = "VALE"
-  WFC = "WFC"
-  XLF = "XLF"
-
-class Direction(PrintEnum):
-  BUY = "BUY"
-  SELL = "SELL"
-
-class InfoType(PrintEnum):
-  HELLO = "hello"
-  OPEN = "open"
-  CLOSE = "close"
-  ERROR = "error"
-  BOOK = "book"
-  TRADE = "trade"
-  ACK = "ack"
-  REJECT = "reject"
-  FILL = "fill"
-  OUT = "out"
 
 #################################
 ## MAIN DATA / DATA STRUCTURES ##
