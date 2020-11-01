@@ -1,18 +1,20 @@
-from typing import List, Tuple
+from typing import List
 from helper import *
 from etc_types import *
 
-def adr_strategy(vale_trade_info: List[Tuple[int]], valbz_trade_info: List[Tuple[int]]) -> List[Trade]:
+def adr_strategy(vale_trade_info: List[TradeInfo], valbz_trade_info: List[TradeInfo]) -> List[Trade]:
     """Takes in the trade data for VALE and VALBZ and returns either `None` or a list of trades to perform.
 
     This algorithm makes use of simple calculations, such as means and averages. Despite its simplicity, its
         performance turned out to be the best out of all ADR strategies we had, and is the final one employed.
 
     Args:
-        vale_trade_info (List[Tuple[int]]): List of VALE `(price, quantity)` tuples in chronological order.
-        valbz_trade_info (List[Tuple[int]]): List of VALBZ `(price, quantity)` tuples in chronological order.
+
+        vale_trade_info (List[TradeInfo]): List of VALE `(price, quantity)` tuples in chronological order.
+        valbz_trade_info (List[TradeInfo]): List of VALBZ `(price, quantity)` tuples in chronological order.
 
     Returns:
+    
         List[Trade]: A list of trades to perform. May be empty.
 
     """

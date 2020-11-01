@@ -1,20 +1,22 @@
 import numpy as np
 import pandas as pd
 
-from typing import List, Tuple, Union
+from typing import List, Union
 from helper import *
 from etc_types import *
 
-def adr_strategy(vale_trade_info: List[Tuple[int]], valbz_trade_info: List[Tuple[int]]) -> List[Trade]:
+def adr_strategy(vale_trade_info: List[TradeInfo], valbz_trade_info: List[TradeInfo]) -> List[Trade]:
     """Takes in the trade data for VALE and VALBZ and returns either `None` or a list of trades to perform.
 
     This algorithm makes use of exponential moving averages.
 
     Args:
-        vale_trade_info (List[Tuple[int]]): List of VALE `(price, quantity)` tuples in chronological order.
-        valbz_trade_info (List[Tuple[int]]): List of VALBZ `(price, quantity)` tuples in chronological order.
+
+        vale_trade_info (List[TradeInfo]): List of VALE `(price, quantity)` tuples in chronological order.
+        valbz_trade_info (List[TradeInfo]): List of VALBZ `(price, quantity)` tuples in chronological order.
 
     Returns:
+    
         List[Trade]: A list of trades to perform. May be empty.
 
     """

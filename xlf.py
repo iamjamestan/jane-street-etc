@@ -13,12 +13,14 @@ def xlf_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: Restin
         will be lists of resting orders.
 
     Args:
+
         gs (RestingDict): Dictionary of GS resting orders.
         ms (RestingDict): Dictionary of MS resting orders.
         wfc (RestingDict): Dictionary of WFC resting orders.
         xlf (RestingDict): Dictionary of XLF resting orders.
 
     Returns:
+    
         List[Trade]: List of trades to make. May be empty.
 
     """
@@ -56,19 +58,6 @@ def xlf_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: Restin
         ] + _execute_basket_items(gs, ms, wfc, Direction.SELL)
     return []
 
-"""
-Same as xlf_strategy but uses time series of trade value in etf basket to calculate xlf value
-all inputs are in df
-eg: bond
-PRICE | QTY
-t0    | t0
-t1    | t1
-t2    | t2
-t3    | t3
-t4    | t4
-"""
-
-
 def xlf_ema_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: RestingDict, 
     gs_df: pd.DataFrame, ms_df: pd.DataFrame, wfc_df: pd.DataFrame, xlf_df: pd.DataFrame) -> List[Trade]:
     """Same as `xlf_strategy` but uses time series of trade values in ETF basket to calculate the XLF value.
@@ -78,6 +67,7 @@ def xlf_ema_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: Re
     The `pd.DataFrame` inputs all have the following columns: `"price"` and `"qty"`.
 
     Args:
+
         gs (RestingDict): Dictionary of GS resting orders.
         ms (RestingDict): Dictionary of MS resting orders.
         wfc (RestingDict): Dictionary of WFC resting orders.
@@ -88,6 +78,7 @@ def xlf_ema_strategy(gs: RestingDict, ms: RestingDict, wfc: RestingDict, xlf: Re
         xlf_df (pd.DataFrame): DataFrame of XLF trades.
 
     Returns:
+
         List[Trade]: List of trades to make. This list may be empty.
 
     """

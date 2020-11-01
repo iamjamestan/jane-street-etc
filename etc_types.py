@@ -1,10 +1,10 @@
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Tuple
 
 ## Types for data
 Trade = Dict[str, Union[str, int]]
 RestingOrder = List[int]
-RestingList = List[RestingOrder]
-RestingDict = Dict[str, RestingList]
+RestingDict = Dict[str, List[RestingOrder]]
+TradeInfo = Tuple[int]
 
 ## Types for exchange sending
 class Action:
